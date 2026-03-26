@@ -2,76 +2,68 @@
 
 The ASTRAEUS-9 system functions as a fault-tolerant mission control system which oversees activities during orbital re-entry. The system uses three technologies to achieve real-time hardware degradation detection through embedded hardware sensing and physics-driven simulation and machine learning.
 
-**System Architecture**
-1. Embedded Kernel (/Astraeus_Kernel.ino)
+## Robotics & GNC
+**Lead Engineer: Rhutvik Pachghare**
 
-Platform: ESP32 Microcontroller 
+### 1. Embedded Kernel (`/Astraeus_Kernel.ino`)
+- **Platform**: ESP32 Microcontroller
+- **Logic**: The system operates **SpatialKalman filter** (`Kalman_Filter.h`) which processes raw sensor data to produce smoothed results and velocity estimations.
+- **Comms**: Transmits telemetry data via MQTT protocol over WiFi.
 
+### 2. Mission Simulation (`/mission_simulator.py`)
+- **Scenario**: Models an orbital decay process from 550km (LEO) to impact.
+- **Physics**: Uses atmospheric drag to simulate increasing "jitter" as altitude decreases.
+- **Anomaly Injection**: Randomly introduces "Cosmic Ray Bit-Flips" and radiation damage based on exposure duration.
 
-Logic: The system operates SpatialKalman filter (Kalman_Filter.h) which processes raw sensor data to produce smoothed results and velocity estimations.
+### 3. Physics & Thermal Engines
+- **`physics_engine.py`**: Computes atmospheric density and orbital torque.
+- **`thermodynamics.py`**: Models re-entry heat flux and skin temperature estimates.
 
-Comms: The system sends telemetry data by using MQTT protocol to transmit over WiFi to the broker.
+---
 
-**2. Mission Simulation (/mission_simulator.py)**
+## ML & Data Engineering
+**Lead Engineer: Pooja Kiran**
 
-Scenario: The system models an orbital decay process which starts from 550km (LEO) and ends with an impact.
+### 1. Intelligence & Diagnostics
+- **`anomaly_ml.py`**: MLP Regressor (Autoencoder) evaluates hardware faults through reconstruction error analysis.
+- **`black_box.sql`**: Schema for persisting mission-critical telemetry and diagnostic logs.
 
-Physics: The system uses atmospheric drag to create a model which shows increasing "jitter" effects that happen when altitude decreases.
+### 2. Mission Control Dashboard (`/main.py`)
+- **Interface**: Streamlit-based UI with a custom "dark mode" (`style.css`).
+- **Telemetry**: Real-time kinetic vector visualization.
+- **Diagnostics**: Neural spectral analysis for hardware condition assessment.
 
-Anomaly Injection: The system uses random methods to introduce "Cosmic Ray Bit-Flips" and radiation damage according to the duration of exposure.
+### 3. Infrastructure & Setup
+The system uses **Docker** to containerize the MQTT broker (Mosquitto), Postgres database, and the Python dashboard.
 
-**3. Intelligence & Physics Engines**
+#### Prerequisites
+- **Docker & Docker Compose**
+- **Python 3.9+** (for local simulation)
 
-anomaly_ml.py: The MLP Regressor (Autoencoder) system evaluates hardware faults through reconstruction error analysis.
+#### Quick Start
+1. **Initialize Services**:
+   ```bash
+   bash setup.sh
+   ```
+   *Launches Mosquitto Broker, Postgres DB, and Streamlit Dashboard.*
 
-physics_engine.py: The system computes both atmospheric density and orbital torque.
+2. **Launch Simulation**:
+   ```bash
+   python mission_simulator.py
+   ```
+   *Publishes telemetry to `astraeus/telemetry`.*
 
-thermodynamics.py: The system creates a model for re-entry heat flux and skin temperature estimates.
+3. **Access Dashboard**: 
+   Navigate to [http://localhost:8501](http://localhost:8501).
 
-4. Mission Control Dashboard (/main.py)
+---
 
-Interface: The interface uses Streamlit to create a UI which displays a "dark mode" CSS theme.
+## Dependencies
+- **Python**: `streamlit`, `numpy`, `scikit-learn`, `paho-mqtt`, `plotly`, `scipy`, `psycopg2-binary`.
+- **Services**: `eclipse-mosquitto`, `postgres:latest`.
 
-Modules:
-
-
-Telemetry: The system provides real-time displays of kinetic vector data.
-
-Diagnostics: The system uses neural spectral analysis to assess hardware condition.
-
-Thermal Re-entry: The system creates detailed aerodynamic thermal profiles of re-entry vehicles.
-
-**Infrastructure & Setup**
-
-The system uses Docker to create containerized environments which manage the MQTT broker and Postgres database and Python dashboard.
-
-**Prerequisites**
-
-i. Docker & Docker Compose: The system requires Python version 3.9 or higher for local simulation purposes.
-
-ii. Initialize Services: Execute the setup script to build and launch the container cluster:
-
-                                                                                        bash setup.sh
-
-This starts the Mosquitto Broker, Postgres DB, and Streamlit Dashboard.
-
-iiii. Launch Simulation: In a separate terminal, start the telemetry generator:
-
-                                                                          python mission_simulator.py
-
-This will begin publishing data to astraeus/telemetry.
-
-iv. Access Mission Control: Navigate to http://localhost:8501 to view live mission data.
-
-**Dependencies**
-Python: streamlit, numpy, scikit-learn, paho-mqtt, plotly, scipy, psycopg2-binary.
-
-Services: eclipse-mosquitto, postgres:latest.
-
- **Data Logs**
-
-Flight data is persisted to the mission_logs Postgres table, recording timestamp, altitude, heat flux, and anomaly scores
-
+## Data Logs
+Flight data is persisted to the `mission_logs` Postgres table, recording timestamp, altitude, heat flux, and anomaly scores.
 
 ![Dashboard](https://github.com/user-attachments/assets/31d4fced-840b-4a10-8817-b493f7fad03e)
 
