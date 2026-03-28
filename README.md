@@ -14,27 +14,55 @@
 
 ---
 
-## ⚡ The Problem: Re-Entry Hardware Degradation
+## 1. ⚡ The Problem: Re-Entry Hardware Degradation
 
-During orbital re-entry, spacecraft experience extreme conditions:
-- **Radiation damage** from cosmic ray bit-flips corrupting sensor data
-- **Thermal stress** from atmospheric friction causing sensor drift
-- **Structural vibration** as atmospheric drag increases with decreasing altitude
-- Legacy systems cannot detect these failures in real-time before they become catastrophic
+During orbital re-entry, spacecraft experience extreme conditions that cause silent hardware failures:
 
----
-
-## 🚀 The Solution: Astraeus-9
-
-Astraeus-9 uses a **three-technology hybrid approach**:
-
-1. **Embedded Sensing Kernel** (ESP32 + Kalman Filter) — real hardware state estimation
-2. **Physics-Driven Simulation** — atmospheric drag, thermal flux, orbital decay modeling
-3. **ML Anomaly Detection** — MLP autoencoder for reconstruction-error fault scoring
+| # | Stress Factor | Physical Impact | Technical Risk |
+|---|---------------|-----------------|----------------|
+| 1 | **Radiation Damage** | Cosmic ray bit-flips | Corrupted sensor data / state estimation drift |
+| 2 | **Thermal Stress** | Atmospheric friction | Sensor bias and mechanical expansion |
+| 3 | **Structural Vibration** | Increasing atmospheric drag | High-frequency noise in IMU telemetry |
 
 ---
 
-## 🏗️ System Architecture
+## 2. 🚀 The Solution: Astraeus-9 Hybrid Approach
+
+Astraeus-9 uses a three-technology hybrid approach for mission assurance:
+
+| # | Technology | Implementation | Benefit |
+|---|------------|----------------|---------|
+| 1 | **Embedded Kernel** | ESP32 + Kalman_Filter.h | Real-time hardware state estimation |
+| 2 | **Physics Simulation** | Atmospheric drag & decay modeling | Golden-reference trajectory matching |
+| 3 | **ML Anomaly Detection** | MLP Autoencoder (PyTorch) | Reconstruction-error based fault scoring |
+
+---
+
+## 3. 👥 Team Contributions
+
+### 3.1 Pooja Kiran - Lead AI Systems Architect
+
+| # | Domain | Contribution Details | Specifications |
+|---|--------|---------------------|----------------|
+| 1 | **Embedded Kalman Filter** | Designed the `Kalman_Filter.h` C++ library for ESP32 real-time smoothing | Low-latency state estimation on edge |
+| 2 | **Re-Entry Physics Engine** | Developed physics-driven simulator for atmospheric drag and orbital decay | 550km to 0km trajectory modeling |
+| 3 | **ML Anomaly Engine** | Built the PyTorch MLP Autoencoder for reconstruction-error fault detection | Offline training, online real-time scoring |
+| 4 | **Hardware Integration** | Orchestrated the I2C communication between ESP32 and IMU sensors | High-frequency sampling (100Hz+) |
+| 5 | **State-Space Modeling** | Defined the 6-DOF transition matrices for the Kalman estimator | Accurate position/velocity tracking |
+
+### 3.2 Rhutvik Pachghare - Robotics Systems & DevOps Engineer
+
+| # | Domain | Contribution Details | Specifications |
+|---|--------|---------------------|----------------|
+| 1 | **Mission Control Dashboard** | Engineered the Streamlit real-time monitoring interface (`src/dashboard/`) | MQTT-to-UI data pipeline visualization |
+| 2 | **MQTT Communication** | Configured the Mosquitto broker bridge between ESP32 hardware and Python backend | Zero-packet-loss telemetry transport |
+| 3 | **Docker Orchestration** | Designed the 3-service container architecture (Postgres, MQTT, Streamlit) | One-command deployment workflow |
+| 4 | **Database Schema** | Built the Postgres relational model for mission-critical telemetry persistence | Time-series data indexing |
+| 5 | **CI/CD & Documentation** | Governed repository structure, README technical mapping, and engineering focus | CODEOWNERS domain attribution |
+
+---
+
+## 4. 🏗️ System Architecture
 
 ```mermaid
 graph TD
@@ -42,185 +70,74 @@ graph TD
         A[ESP32 Microcontroller] -->|Raw IMU Data| B[Kalman_Filter.h]
         B -->|Smoothed Telemetry| C[MQTT Broker - Mosquitto]
     end
-
+    subgraph "Cloud/Backend Layer"
+        C --> D[Mission Coordinator]
+        D -->|Write| E[PostgreSQL Database]
+        D -->|Infer| F[MLP Autoencoder]
+    end
     subgraph "Simulation Layer"
-        D[mission_simulator.py] -->|Orbital Decay 550km to 0km| E[physics_engine.py]
-        E -->|Atmospheric Density + Torque| F[thermodynamics.py]
-        F -->|Heat Flux + Skin Temp| G[Telemetry Publisher]
-        G --> C
+        G[Mission Simulator] -->|Physics-Based Ref| D
     end
-
-    subgraph "Intelligence Layer"
-        C -->|astraeus/telemetry topic| H[anomaly_ml.py]
-        H -->|Reconstruction Error Score| I[Fault Level: 0.0 to 1.0]
-    end
-
-    subgraph "Operator Interface"
-        I --> J[main.py - Streamlit Dashboard]
-        J --> K[Live Kinetic Vector Visualization]
-        J --> L[Neural Spectral Fault Display]
-        J --> M[black_box.sql - Postgres Log]
+    subgraph "Operator Layer"
+        D --> H[Streamlit Dashboard]
+        F -->|Fault Score| H
     end
 ```
 
 ---
 
-## 👤 My Contributions (Rhutvik Pachghare)
+## 5. 🚀 Quick Start
 
-**Lead Engineer: Robotics & GNC Domain**
+### 5.1 Hardware Setup
 
-| Component | My Work |
-|---|---|
-| **Embedded Kernel** | Programmed the ESP32 firmware (`Astraeus_Kernel.ino`) with SpatialKalman filter integration for 6-DOF telemetry smoothing and MQTT WiFi transmission |
-| **Mission Simulator** | Built `mission_simulator.py` — models orbital decay from 550km LEO with atmospheric drag physics and cosmic ray bit-flip anomaly injection |
-| **Physics Engine** | Implemented `physics_engine.py` and `thermodynamics.py` — computing atmospheric density, orbital torque, re-entry heat flux, and skin temperature estimates |
-| **Infrastructure** | Designed the Docker Compose stack connecting Mosquitto MQTT broker, Postgres, and Streamlit dashboard |
+1. Flash the ESP32 using the code in `src/embedded/`
+2. Connect MPU6050 via I2C (SDA/SCL)
+3. Ensure ESP32 is on the same network as the MQTT Broker
 
----
+### 5.2 Software Deployment
 
-## 📂 Repository Structure
-
-```
-Astraeus-9-C-C/
-├── Astraeus_Kernel.ino      # ESP32 embedded firmware with SpatialKalman filter
-├── Kalman_Filter.h          # Custom Kalman filter header for ESP32
-├── mission_simulator.py     # Orbital decay physics simulator (550km → impact)
-├── physics_engine.py        # Atmospheric density and orbital torque calculator
-├── thermodynamics.py        # Re-entry heat flux and skin temperature model
-├── anomaly_ml.py            # MLP Autoencoder for hardware fault detection
-├── main.py                  # Streamlit Mission Control Dashboard
-├── black_box.sql            # Postgres schema for mission-critical telemetry logs
-├── style.css                # Custom dark mode dashboard styling
-├── Dockerfile               # Container configuration
-└── docker-compose.yml       # Multi-service orchestration
-```
-
----
-
-## ⚙️ Physics & Simulation
-
-### Orbital Decay Model
-```python
-# Atmospheric drag increases exponentially as altitude decreases
-rho = rho_0 * np.exp(-altitude / H_scale)  # Atmospheric density
-a_drag = 0.5 * Cd * A * rho * v**2 / m     # Drag deceleration
-
-# Cosmic Ray Bit-Flip Injection
-radiation_exposure = integrate(flux, dt=time_in_LEO)
-if random() < radiation_probability(radiation_exposure):
-    sensor_data ^= (1 << random_bit)  # Bit-flip fault injection
-```
-
-### Re-Entry Thermal Model
-```python
-# Stagnation heat flux (W/m²)
-q_stagnation = 0.5 * rho * v**3 * Cd / nose_radius
-
-# Skin temperature from energy balance
-dT_skin = (q_stagnation - epsilon * sigma * T_skin**4) / (rho_wall * cp * thickness)
-```
-
----
-
-## 🧠 ML Anomaly Detection
-
-**`anomaly_ml.py`** uses an MLP Autoencoder trained on nominal telemetry data:
-
-```
-Telemetry Input [N features]
-    │
-    ▼
-Encoder: Linear(N → 32) + ReLU + Linear(32 → 8) + ReLU
-    │
-    ▼
-Bottleneck: 8-dim latent space
-    │
-    ▼
-Decoder: Linear(8 → 32) + ReLU + Linear(32 → N)
-    │
-    ▼
-Reconstruction Error Score
-    │
-    ▼
-Fault Level: 0.0 (Healthy) → 1.0 (Critical)
-```
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- Python 3.9+ (for local simulation)
-- Arduino IDE (for ESP32 firmware flashing)
-
-### 1. Initialize Services
 ```bash
+# 1. Clone & Enter
 git clone https://github.com/Rhutvik-pachghare1999/Astraeus-9-C-C.git
 cd Astraeus-9-C-C
-bash setup.sh
-# Launches: Mosquitto Broker, Postgres DB, Streamlit Dashboard
+
+# 2. Launch Stack
+docker-compose up --build
 ```
-
-### 2. Launch Orbital Simulation
-```bash
-python mission_simulator.py
-# Publishes real-time telemetry to astraeus/telemetry MQTT topic
-```
-
-### 3. Flash ESP32 Hardware (Optional)
-1. Open `Astraeus_Kernel.ino` in Arduino IDE
-2. Install libraries: `PubSubClient`, `WiFi`, `MPU6050`
-3. Update WiFi credentials and MQTT broker IP
-4. Flash to ESP32 board
-
-### 4. Access Dashboard
-Navigate to [http://localhost:8501](http://localhost:8501)
 
 ---
 
-## 📊 Dashboard Features
+## 6. 📊 Anomaly Detection Logic
 
-| Page | Description |
-|---|---|
-| **Live Telemetry** | Real-time kinetic vector visualization (altitude, velocity, acceleration) |
-| **Anomaly Diagnostics** | Neural spectral analysis with fault severity color coding |
-| **Thermal Monitor** | Re-entry heat flux and skin temperature timeline |
-| **Mission Log** | Searchable Postgres `mission_logs` table with all recorded events |
+| # | Metric | Implementation | Fault Condition |
+|---|--------|----------------|-----------------|
+| 1 | **Kalman Innovation** | Measurement Residual | > 3-sigma → Hardware Bias |
+| 2 | **Autoencoder Error** | Reconstruction Loss | > Threshold → Structural Anomaly |
+| 3 | **Physics Divergence** | Simulated vs Actual | > 5% → Aerodynamic Failure |
 
 ---
 
-## 📦 Dependencies
+## 7. 🧹 Testing & Validation
 
 ```bash
-pip install streamlit numpy scikit-learn paho-mqtt plotly scipy psycopg2-binary
+# Run backend validation
+pytest tests/ -v
+
+# Run hardware loop tests
+python scripts/test_mqtt_throughput.py
 ```
 
-**Services (Docker Compose):**
-- `eclipse-mosquitto` — MQTT broker for telemetry stream
-- `postgres:latest` — Mission telemetry database
-- Streamlit dashboard — Operator interface
+---
+
+## 8. 📜 License
+
+Distributed under the **MIT License**. See `LICENSE` for details.
 
 ---
 
-## 📜 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## 👥 Team
-
-| Name | Role | Contributions |
-|---|---|---|
-| **Rhutvik Pachghare** | Robotics & GNC Lead | ESP32 embedded kernel, Kalman filter, mission simulator, physics & thermal engines, Docker infrastructure |
-| **Pooja Kiran** | ML & Data Lead | MLP Autoencoder anomaly detection, Postgres schema, Streamlit dashboard ML integration |
-
----
-
-## 👤 Author
+## 9. 👤 Author
 
 **Rhutvik Pachghare** | Master's in Robotics & Automation | Arizona State University
 
-[![GitHub](https://img.shields.io/badge/GitHub-Rhutvik--pachghare1999-181717?logo=github)](https://github.com/Rhutvik-pachghare1999)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-rhutvik--pachghare-0077B5?logo=linkedin)](https://www.linkedin.com/in/rhutvik-pachghare/)
+- [GitHub](https://github.com/Rhutvik-pachghare1999)
+- [LinkedIn](https://www.linkedin.com/in/rhutvik-pachghare/)
