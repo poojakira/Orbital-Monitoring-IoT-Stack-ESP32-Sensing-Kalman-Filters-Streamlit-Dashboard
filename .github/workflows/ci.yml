@@ -1,0 +1,33 @@
+name: Astraeus-9 CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install numpy scikit-learn scipy
+          pip install flake8
+
+      - name: Run Flake8 syntax check
+        run: |
+          flake8 *.py --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Check Python imports
+        run: |
+          python -c "import numpy, sklearn, scipy; print('Core imports OK')"
