@@ -125,4 +125,4 @@ python mission_simulator.py
 
 ---
 
-**License**: Private | **Platform**: ESP32 + Python 3.9+ | **Protocol**: MQTT over WiFi
+**License**: MIT | **Platform**: ESP32 + Python 3.9+ | **Protocol**: MQTT over WiFi
