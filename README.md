@@ -1,4 +1,4 @@
-# Orbital-IoT-Monitor (Astraeus-9)
+# Orbital-IoT-Monitor 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 [![Platform: ESP32 + Python](https://img.shields.io/badge/Platform-ESP32%20%2B%20Python-blue)]()
